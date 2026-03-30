@@ -1,0 +1,117 @@
+### API Configuration Variables
+@base = http://localhost:8000
+@contentType = application/json
+@apiKey = your-api-key-change-in-production
+
+### ===== HEALTH CHECK ENDPOINTS =====
+
+### Root Endpoint
+GET {{base}}/
+
+### Health Check
+GET {{base}}/health
+
+### ===== SUBSCRIBERS ENDPOINTS =====
+
+### List all subscribers
+GET {{base}}/v1/subscribers?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### Create a new subscriber
+POST {{base}}/v1/subscribers
+X-API-Key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Test Insurance Company",
+  "email": "test@insurance.com",
+  "phone": "+1-555-0123"
+}
+
+### Get specific subscriber (replace {id} with actual ID)
+GET {{base}}/v1/subscribers/65a1b2c3d4e5f6g7h8i9j0k1
+X-API-Key: {{apiKey}}
+
+### Update subscriber
+PUT {{base}}/v1/subscribers/65a1b2c3d4e5f6g7h8i9j0k1
+X-API-Key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Updated Company Name",
+  "phone": "+1-555-9876"
+}
+
+### ===== AGENTS ENDPOINTS =====
+
+### List all agents
+GET {{base}}/v1/agents?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### Create a new agent
+POST {{base}}/v1/agents
+X-API-Key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "name": "John Smith",
+  "email": "john@example.com",
+  "agent_code": "AG001",
+  "subscriber_id": null
+}
+
+### ===== BUSINESS LINES ENDPOINTS =====
+
+### List all business lines
+GET {{base}}/v1/business-lines?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### ===== ZIP CODES ENDPOINTS =====
+
+### Get ZIP code information
+GET {{base}}/v1/zip-codes/10001
+X-API-Key: {{apiKey}}
+
+### Validate ZIP code
+POST {{base}}/v1/zip-codes/validate
+X-API-Key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "zip_code": "10001"
+}
+
+### ===== FOLIOS ENDPOINTS =====
+
+### Get next folio number
+GET {{base}}/v1/folios?prefix=FOL
+X-API-Key: {{apiKey}}
+
+### ===== CATALOGS ENDPOINTS =====
+
+### Get risk classifications catalog
+GET {{base}}/v1/catalogs/risk-classification?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### Get guarantees catalog
+GET {{base}}/v1/catalogs/guarantees?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### ===== TARIFFS ENDPOINTS =====
+
+### Get all tariffs
+GET {{base}}/v1/tariffs?skip=0&limit=10
+X-API-Key: {{apiKey}}
+
+### Get tariffs by factor type (INCENDIO)
+GET {{base}}/v1/tariffs?factor_type=INCENDIO
+X-API-Key: {{apiKey}}
+
+### Get tariffs by factor type (CAT)
+GET {{base}}/v1/tariffs?factor_type=CAT
+X-API-Key: {{apiKey}}
+
+### Get tariffs by factor type (FHM)
+GET {{base}}/v1/tariffs?factor_type=FHM
+X-API-Key: {{apiKey}}
+###

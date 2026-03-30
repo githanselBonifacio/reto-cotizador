@@ -1,0 +1,8 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/PLATAFORMA_DANOS}
+
+core-ohs:
+  base-url: ${CORE_OHS_BASE_URL:http://localhost:8000}
+  api-key: ${CORE_OHS_API_KEY:}

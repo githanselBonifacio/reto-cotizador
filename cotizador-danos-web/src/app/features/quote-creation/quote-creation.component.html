@@ -1,0 +1,453 @@
+<section class="workflow-page">
+  <header class="hero">
+    <p class="eyebrow">Plataforma Daños Web</p>
+    <h1>Cotizador Integral de Daños</h1>
+    <p class="subtitle">Flujo completo alineado a la API: datos generales, ubicaciones, tecnico, terminos y calculo.</p>
+  </header>
+
+  @if (isLoading()) {
+    <mat-card class="loading-card">
+      <p>Cargando cotizacion...</p>
+    </mat-card>
+  } @else {
+    <mat-card class="folio-card">
+      <div>
+        <p class="meta-label">Folio</p>
+        <h3>{{ currentQuote()?.folio ?? 'N/A' }}</h3>
+      </div>
+      <div>
+        <p class="meta-label">Version</p>
+        <h3>{{ currentQuote()?.version ?? 0 }}</h3>
+      </div>
+      <div>
+        <p class="meta-label">Estado</p>
+        <h3>{{ currentQuote()?.status ?? 'PENDING' }}</h3>
+      </div>
+    </mat-card>
+
+    @if (isCalculated()) {
+      <mat-card class="lock-banner">
+        <div class="lock-banner-content">
+          <mat-icon>lock</mat-icon>
+          <div>
+            <strong>Cotización bloqueada</strong>
+            <p>La cotización ya está en estado CALCULATED. Solo puedes revisar la información y generar el PDF.</p>
+          </div>
+        </div>
+      </mat-card>
+    }
+
+    <mat-stepper id="qc-stepper-main" [selectedIndex]="selectedStepIndex()" (selectionChange)="onStepChange($event)">
+      <mat-step id="qc-step-general-info" [stepControl]="generalInfoForm" label="Información General">
+        <form [formGroup]="generalInfoForm" class="grid-form general-info-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre</mat-label>
+            <input id="qc-input-nombre" matInput formControlName="nombre" />
+            @if (generalInfoForm.controls.nombre.invalid && generalInfoForm.controls.nombre.touched) {
+              <mat-error>Nombre requerido.</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="rfc-field-group">
+            <mat-form-field appearance="outline">
+              <mat-label>RFC</mat-label>
+              <input id="qc-input-rfc" matInput formControlName="rfc" style="text-transform: uppercase" />
+              <mat-hint>Formato: 3-4 letras + 6 dígitos + 3 caracteres</mat-hint>
+              @if (generalInfoForm.controls.rfc.invalid && generalInfoForm.controls.rfc.touched) {
+                <mat-error>RFC inválido. Debe ser: 3-4 letras + 6 números + 3 caracteres</mat-error>
+              }
+            </mat-form-field>
+
+            <button id="qc-btn-rfc-guide-toggle" type="button" mat-button class="rfc-help-trigger" (click)="toggleRfcGuide()">
+              <mat-icon>{{ showRfcGuide() ? 'expand_less' : 'help_outline' }}</mat-icon>
+              {{ showRfcGuide() ? 'Ocultar guía del RFC' : 'Ver información para llenar el RFC' }}
+            </button>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Codigo Agente</mat-label>
+            <mat-select id="qc-select-codigo-agente" formControlName="codigoAgente">
+              @for (agent of agentCatalog(); track agent._id) {
+                <mat-option [value]="agent.agent_code">
+                  {{ agent.agent_code }} - {{ agent.name }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-hint>Selecciona un agente desde catálogo.</mat-hint>
+            @if (generalInfoForm.controls.codigoAgente.invalid && generalInfoForm.controls.codigoAgente.touched) {
+              <mat-error>Codigo de agente requerido.</mat-error>
+            }
+          </mat-form-field>
+        </form>
+
+        @if (showRfcGuide()) {
+          <mat-card class="rfc-guide">
+            <div class="guide-header">
+              <mat-icon>help_outline</mat-icon>
+              <h4>Guía del RFC</h4>
+            </div>
+            
+            <div class="guide-content">
+              <div class="format-breakdown">
+                <p class="format-label">Estructura del RFC (13 caracteres):</p>
+                <div class="format-parts">
+                  <span class="part part-letters">3-4 Letras</span>
+                  <span class="plus">+</span>
+                  <span class="part part-numbers">6 Dígitos</span>
+                  <span class="plus">+</span>
+                  <span class="part part-final">3 Caracteres</span>
+                </div>
+              </div>
+
+              <div class="examples">
+                <p class="examples-label">Ejemplos válidos:</p>
+                <div class="example-list">
+                  <span class="example-badge">ABC123456XYZ</span>
+                  <span class="example-badge">ABCD123456AB1</span>
+                  <span class="example-badge">XYZ654321MNO</span>
+                </div>
+              </div>
+
+              <div class="rules">
+                <p>Reglas:</p>
+                <ul>
+                  <li>Letras mayúsculas (A-Z)</li>
+                  <li>Puede incluir Ñ o &</li>
+                  <li>Dígitos: 0-9</li>
+                  <li>Últimos 3: mayúsculas o números</li>
+                </ul>
+              </div>
+            </div>
+          </mat-card>
+        }
+
+        <div class="step-actions">
+          <button id="qc-btn-general-save" mat-flat-button color="primary" (click)="saveGeneralInfo()" [disabled]="generalInfoForm.invalid || isCalculated()">
+            Guardar
+          </button>
+          <button id="qc-btn-general-next" mat-button matStepperNext [disabled]="generalInfoForm.invalid">Siguiente</button>
+        </div>
+      </mat-step>
+
+      <mat-step id="qc-step-locations" label="Ubicaciones">
+        <div class="location-toolbar">
+          <div>
+            <h3>Ubicaciones</h3>
+            <p>{{ validLocationsCount() }} / {{ locations().length }} validas</p>
+          </div>
+          <button id="qc-btn-location-add" mat-flat-button color="primary" (click)="openAddLocationDialog()" [disabled]="isCalculated()">
+            <mat-icon>add</mat-icon>
+            Agregar ubicacion
+          </button>
+        </div>
+
+        <div class="table-shell">
+          <table mat-table [dataSource]="locations()" class="locations-table">
+            <ng-container matColumnDef="indice">
+              <th mat-header-cell *matHeaderCellDef>#</th>
+              <td mat-cell *matCellDef="let location">{{ location.indice ?? '-' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="locationName">
+              <th mat-header-cell *matHeaderCellDef>Ubicacion</th>
+              <td mat-cell *matCellDef="let location">{{ location.locationName ?? location.nombreUbicacion }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="zipCode">
+              <th mat-header-cell *matHeaderCellDef>CP</th>
+              <td mat-cell *matCellDef="let location">{{ location.zipCode ?? location.codigoPostal }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="giro">
+              <th mat-header-cell *matHeaderCellDef>Giro</th>
+              <td mat-cell *matCellDef="let location">{{ location.giro }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="buildingValue">
+              <th mat-header-cell *matHeaderCellDef>Building</th>
+              <td mat-cell *matCellDef="let location">{{ location.buildingValue ?? 0 | currency:'COP':'symbol':'1.0-0' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="contentsValue">
+              <th mat-header-cell *matHeaderCellDef>Contents</th>
+              <td mat-cell *matCellDef="let location">{{ location.contentsValue ?? 0 | currency:'COP':'symbol':'1.0-0' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Estatus</th>
+              <td mat-cell *matCellDef="let location">
+                <mat-chip-set>
+                  <mat-chip [highlighted]="true" [class.valid-chip]="locationStatus(location) === 'VALID'" [class.incomplete-chip]="locationStatus(location) === 'INCOMPLETE'">
+                    {{ locationStatus(location) }}
+                  </mat-chip>
+                </mat-chip-set>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let location; let rowIndex = index" class="actions-cell">
+                <button [id]="'qc-btn-location-edit-' + rowIndex" mat-icon-button (click)="openEditLocationDialog(location)" aria-label="Editar ubicacion" [disabled]="isCalculated()">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button [id]="'qc-btn-location-delete-' + rowIndex" mat-icon-button (click)="deleteLocation(location)" aria-label="Eliminar ubicacion" [disabled]="isCalculated()">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+
+        <div class="step-actions">
+          <button id="qc-btn-locations-prev" mat-button matStepperPrevious>Atras</button>
+          <button id="qc-btn-locations-next" mat-button matStepperNext [disabled]="locations().length === 0">Siguiente</button>
+        </div>
+      </mat-step>
+
+      <mat-step id="qc-step-technical-info" [stepControl]="technicalInfoForm" label="Información Técnica">
+        <form [formGroup]="technicalInfoForm" class="grid-form technical-grid">
+          <div class="technical-info-header full-width">
+            <div>
+              <h3>Información técnica</h3>
+              <p>Captura coberturas y arma la configuración técnica con pares clave/valor.</p>
+            </div>
+            <button id="qc-btn-technical-guide-toggle" type="button" mat-stroked-button class="technical-help-trigger" (click)="toggleTechnicalGuide()">
+              <mat-icon>{{ showTechnicalGuide() ? 'expand_less' : 'help_outline' }}</mat-icon>
+              {{ showTechnicalGuide() ? 'Ocultar ayuda técnica' : 'Cómo llenar esta sección' }}
+            </button>
+          </div>
+
+          @if (showTechnicalGuide()) {
+            <mat-card class="technical-guide full-width">
+              <div class="guide-header">
+                <mat-icon>construction</mat-icon>
+                <h4>Guía de información técnica</h4>
+              </div>
+
+              <div class="technical-guide-grid">
+                <div class="guide-block">
+                  <p class="guide-title">Coberturas</p>
+                  <p>Escribe las coberturas separadas por coma. Ejemplo:</p>
+                  <div class="guide-badges">
+                    <span class="example-badge">incendio</span>
+                    <span class="example-badge">terremoto</span>
+                    <span class="example-badge">responsabilidad civil</span>
+                  </div>
+                </div>
+
+                <div class="guide-block">
+                  <p class="guide-title">Configuración clave/valor</p>
+                  <p>Agrega una fila por cada dato técnico que necesite el backend.</p>
+                  <ul>
+                    <li><strong>Clave:</strong> nombre técnico, por ejemplo <em>deducible</em>.</li>
+                    <li><strong>Tipo:</strong> texto, número o booleano.</li>
+                    <li><strong>Valor:</strong> el dato concreto que se enviará.</li>
+                  </ul>
+                </div>
+
+                <div class="guide-block">
+                  <p class="guide-title">Ejemplos</p>
+                  <div class="guide-examples-table">
+                    <div><strong>Clave</strong></div>
+                    <div><strong>Tipo</strong></div>
+                    <div><strong>Valor</strong></div>
+                    <div>deducible</div>
+                    <div>Número</div>
+                    <div>10</div>
+                    <div>moneda</div>
+                    <div>Texto</div>
+                    <div>MXN</div>
+                    <div>requiereInspeccion</div>
+                    <div>Booleano</div>
+                    <div>true</div>
+                  </div>
+                </div>
+              </div>
+            </mat-card>
+          }
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Opciones Cobertura (CSV)</mat-label>
+            <mat-select
+              id="qc-select-coberturas"
+              [value]="selectedGuarantees()"
+              (valueChange)="onGuaranteesSelectionChange($event)"
+              multiple
+            >
+              @for (guarantee of guaranteesCatalog(); track guarantee._id) {
+                <mat-option [value]="guarantee.name">
+                  {{ guarantee.name }} ({{ guarantee.code }})
+                </mat-option>
+              }
+            </mat-select>
+            <mat-hint>Selecciona una o más coberturas desde catálogo.</mat-hint>
+            @if (technicalInfoForm.controls.opcionesCoberturaCsv.invalid && technicalInfoForm.controls.opcionesCoberturaCsv.touched) {
+              <mat-error>Debes capturar al menos una opcion.</mat-error>
+            }
+          </mat-form-field>
+
+          <section class="layout-builder full-width">
+            <div class="layout-builder-header">
+              <div>
+                <h4>Configuración técnica</h4>
+                <p>Construye la configuración con campos estructurados.</p>
+              </div>
+
+              <button id="qc-btn-layout-add" type="button" mat-stroked-button (click)="addLayoutEntry()" [disabled]="isCalculated()">
+                <mat-icon>add</mat-icon>
+                Agregar campo
+              </button>
+            </div>
+
+            <div formArrayName="layoutEntries" class="layout-rows">
+              @for (entry of layoutEntries.controls; track $index) {
+                <div class="layout-row" [id]="'qc-layout-row-' + $index" [formGroupName]="$index">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Clave</mat-label>
+                    <input [id]="'qc-input-layout-key-' + $index" matInput formControlName="key" placeholder="Ej: deducible" />
+                    @if (hasLayoutEntryKeyError($index)) {
+                      <mat-error>Captura una clave cuando ingreses un valor.</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Tipo</mat-label>
+                    <mat-select [id]="'qc-select-layout-type-' + $index" formControlName="valueType">
+                      <mat-option value="string">Texto</mat-option>
+                      <mat-option value="number">Número</mat-option>
+                      <mat-option value="boolean">Booleano</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="layout-value-field">
+                    <mat-label>Valor</mat-label>
+                    <input [id]="'qc-input-layout-value-' + $index" matInput formControlName="value" placeholder="Captura el valor" />
+                  </mat-form-field>
+
+                  <button
+                    [id]="'qc-btn-layout-remove-' + $index"
+                    type="button"
+                    mat-icon-button
+                    class="layout-remove-button"
+                    (click)="removeLayoutEntry($index)"
+                    [disabled]="isCalculated()"
+                    aria-label="Eliminar fila tecnica"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        </form>
+
+        <div class="step-actions">
+          <button id="qc-btn-technical-prev" mat-button matStepperPrevious>Atras</button>
+          <button id="qc-btn-technical-save" mat-flat-button color="primary" (click)="saveTechnicalInfo()" [disabled]="technicalInfoForm.invalid || isCalculated()">
+            Guardar tecnico
+          </button>
+          <button id="qc-btn-technical-next" mat-button matStepperNext [disabled]="technicalInfoForm.invalid">Siguiente</button>
+        </div>
+      </mat-step>
+
+      <mat-step id="qc-step-terms" [stepControl]="termsForm" label="Términos y Condiciones">
+        <div class="terms-box" [formGroup]="termsForm">
+          <p>
+            Confirmo que la informacion capturada es correcta y autorizo el calculo de la cotizacion.
+          </p>
+          <mat-checkbox id="qc-checkbox-accepted-terms" formControlName="acceptedTerms" [disabled]="isCalculated() || termsAcceptedLocked()">
+            Acepto terminos y condiciones
+          </mat-checkbox>
+        </div>
+
+        <div class="step-actions">
+          <button id="qc-btn-terms-prev" mat-button matStepperPrevious>Atras</button>
+          <button id="qc-btn-terms-next" mat-button matStepperNext [disabled]="termsForm.invalid">Continuar a calculo</button>
+        </div>
+      </mat-step>
+
+      <mat-step id="qc-step-calculation" label="Cálculo y Resumen">
+        <div class="calculate-pane">
+          <button id="qc-btn-calculate" mat-flat-button color="primary" (click)="calculate()" [disabled]="isCalculating() || isCalculated()">
+            {{ isCalculating() ? 'Calculando...' : 'Recalcular prima' }}
+          </button>
+
+          <section class="summary-grid">
+            <mat-card class="result-card">
+              <p class="meta-label">Total Prima Neta</p>
+              <h2>{{ totalPrimaNeta() | currency:'COP':'symbol':'1.0-0' }}</h2>
+            </mat-card>
+
+            <mat-card class="result-card accent">
+              <p class="meta-label">Total Prima Comercial</p>
+              <h2>{{ totalPrimaComercial() | currency:'COP':'symbol':'1.0-0' }}</h2>
+            </mat-card>
+          </section>
+        </div>
+
+        <div class="step-actions">
+          <button id="qc-btn-calculation-prev" mat-button matStepperPrevious>Atras</button>
+          <button id="qc-btn-calculation-next" mat-button matStepperNext [disabled]="!isCalculated()">Confirmar cotización</button>
+        </div>
+      </mat-step>
+
+      <mat-step id="qc-step-confirmation" label="Confirmación">
+        <section class="confirmation-pane">
+          <mat-card class="confirmation-card">
+            <h3>Confirmación final</h3>
+            <p>Revisa la información consolidada de la cotización antes de generar el PDF final.</p>
+
+            <div class="confirmation-grid">
+              <div>
+                <p class="meta-label">Asegurado</p>
+                <strong>{{ generalInfoForm.getRawValue().nombre || 'N/A' }}</strong>
+              </div>
+              <div>
+                <p class="meta-label">RFC</p>
+                <strong>{{ generalInfoForm.getRawValue().rfc || 'N/A' }}</strong>
+              </div>
+              <div>
+                <p class="meta-label">Agente</p>
+                <strong>{{ generalInfoForm.getRawValue().codigoAgente || 'N/A' }}</strong>
+              </div>
+              <div>
+                <p class="meta-label">Coberturas</p>
+                <strong>{{ technicalInfoForm.getRawValue().opcionesCoberturaCsv || 'N/A' }}</strong>
+              </div>
+              <div>
+                <p class="meta-label">Ubicaciones</p>
+                <strong>{{ locations().length }}</strong>
+              </div>
+              <div>
+                <p class="meta-label">Estado</p>
+                <strong>{{ currentQuote()?.status ?? 'PENDING' }}</strong>
+              </div>
+            </div>
+
+            <div class="summary-grid confirmation-summary-grid">
+              <mat-card class="result-card">
+                <p class="meta-label">Prima neta total</p>
+                <h2>{{ totalPrimaNeta() | currency:'COP':'symbol':'1.0-0' }}</h2>
+              </mat-card>
+
+              <mat-card class="result-card accent">
+                <p class="meta-label">Prima comercial total</p>
+                <h2>{{ totalPrimaComercial() | currency:'COP':'symbol':'1.0-0' }}</h2>
+              </mat-card>
+            </div>
+          </mat-card>
+        </section>
+
+        <div class="step-actions">
+          <button id="qc-btn-confirmation-prev" mat-button matStepperPrevious>Atras</button>
+          <button id="qc-btn-generate-pdf" mat-flat-button color="primary" (click)="generateQuotePdf()" [disabled]="!isCalculated() || isGeneratingPdf()">
+            {{ isGeneratingPdf() ? 'Generando PDF...' : 'Generar PDF de cotización' }}
+          </button>
+        </div>
+      </mat-step>
+    </mat-stepper>
+  }
+</section>

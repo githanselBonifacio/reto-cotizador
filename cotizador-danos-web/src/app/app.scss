@@ -1,0 +1,30 @@
+:host {
+	display: block;
+	min-height: 100vh;
+}
+
+.topbar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	box-shadow: 0 10px 25px rgba(25, 12, 56, 0.18);
+}
+
+.spacer {
+	flex: 1 1 auto;
+}
+
+.nav-links {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.active-link {
+	background-color: rgba(255, 193, 7, 0.16);
+}
+
+.content-shell {
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 1.5rem;
+}
