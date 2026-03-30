@@ -56,3 +56,6 @@ Se utiliza Serenity BDD con el patron Screenplay para pruebas funcionales de ext
 - Escenario E2E principal: El actor Agente ejecuta el flujo completo de cotizacion.
 - Enfoque: Pruebas centradas en comportamiento y valor funcional.
 - Entregable: Reportes vivos para evidencia funcional y trazabilidad.
+
+video presentacion
+https://youtu.be/ZPfUerWx5R8
