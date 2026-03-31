@@ -1,0 +1,34 @@
+# Dockerfile for database initialization service
+# This service runs once at startup to seed MongoDB databases
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    motor==3.3.2 \
+    pymongo==4.6.0 \
+    python-dotenv==1.0.0
+
+# Copy seeding scripts
+COPY plataforma-core-ohs/scripts/seed_database.py /app/seed_fastapi.py
+COPY plataforma-core-ohs/app /app/app
+COPY cotizador-danos-back/scripts/seed_database.py /app/seed_spring.py
+COPY initialize_databases.py /app/initialize_databases.py
+
+# Make scripts executable
+RUN chmod +x /app/*.py
+
+# Entry point: Run initialization script
+ENTRYPOINT ["python", "-u", "/app/initialize_databases.py"]

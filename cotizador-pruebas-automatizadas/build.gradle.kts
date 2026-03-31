@@ -32,6 +32,13 @@ dependencies {
     implementation("org.hamcrest:hamcrest:2.2")
 
     testImplementation("com.github.javafaker:javafaker:1.0.2")
+    testImplementation("net.serenity-bdd:serenity-core:$serenityVersion")
+    testImplementation("net.serenity-bdd:serenity-junit:$serenityVersion")
+    testImplementation("net.serenity-bdd:serenity-cucumber:$serenityVersion")
+    testImplementation("net.serenity-bdd:serenity-screenplay:$serenityVersion")
+    testImplementation("net.serenity-bdd:serenity-screenplay-webdriver:$serenityVersion")
+    testImplementation("net.thucydides:thucydides-core:0.9.275")
+    testImplementation("net.thucydides:thucydides-junit:0.9.275")
 
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")

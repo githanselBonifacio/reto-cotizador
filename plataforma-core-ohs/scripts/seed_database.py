@@ -1,6 +1,7 @@
 """MongoDB database initialization and idempotent seed script."""
 
 import asyncio
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -15,7 +16,30 @@ if str(ROOT_DIR) not in sys.path:
 
 load_dotenv(ROOT_DIR / ".env")
 
-from app.core.config import settings
+try:
+    from app.core.config import settings as app_settings
+except Exception:
+    app_settings = None
+
+
+def get_mongodb_connection_string() -> str:
+    """Resolve MongoDB URI from environment first, then app settings."""
+    if os.getenv("MONGODB_URI"):
+        return os.getenv("MONGODB_URI", "")
+    if os.getenv("MONGODB_URL"):
+        return os.getenv("MONGODB_URL", "")
+    if app_settings is not None:
+        return app_settings.mongodb_connection_string
+    return "mongodb://localhost:27017"
+
+
+def get_database_name() -> str:
+    """Resolve database name from environment first, then app settings."""
+    if os.getenv("DATABASE_NAME"):
+        return os.getenv("DATABASE_NAME", "CATALOGO_DANOS")
+    if app_settings is not None:
+        return app_settings.database_name
+    return "CATALOGO_DANOS"
 
 
 async def ensure_database_exists(client: AsyncIOMotorClient, database_name: str) -> AsyncIOMotorDatabase:
@@ -97,14 +121,16 @@ async def upsert_many(
 
 async def seed_database() -> None:
     """Create database, collections, indexes, and seed local MongoDB data."""
-    client = AsyncIOMotorClient(settings.mongodb_connection_string)
+    mongodb_connection_string = get_mongodb_connection_string()
+    database_name = get_database_name()
+    client = AsyncIOMotorClient(mongodb_connection_string)
 
     try:
         await client.admin.command("ping")
-        print(f"✓ Connected to MongoDB: {settings.mongodb_connection_string}")
+        print(f"✓ Connected to MongoDB: {mongodb_connection_string}")
         print("🌱 Starting database validation and seeding...")
 
-        database = await ensure_database_exists(client, settings.database_name)
+        database = await ensure_database_exists(client, database_name)
 
         collection_names = [
             "subscribers",

@@ -1,6 +1,7 @@
 Feature: Creacion de cotizacion y descarga de PDF
 
-  Scenario: Complete insurance quote creation and PDF download
+  Scenario: Abrir el HomePage del cotizador
+
     Given el usuario inicia el proceso de cotizacion con:
       | nombre      | rfc           | codigoAgente | expectedStatus | expectedPdfName |
       | QA Automat  | RFC123456789  | AGT001       | CALCULATED     | cotizacion.pdf  |
