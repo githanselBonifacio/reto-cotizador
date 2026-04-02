@@ -15,10 +15,14 @@ public class QuoteStatus implements Question<String> {
 
     @Override
     public String answeredBy(Actor actor) {
+
         return Text.of(ConfirmationStepPage.FINAL_STATUS)
                 .answeredBy(actor)
                 .trim()
                 .toUpperCase(Locale.ROOT);
+    }
+    public static QuoteStatus finalStatus() {
+        return new QuoteStatus();
     }
 }
 

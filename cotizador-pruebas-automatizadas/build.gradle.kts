@@ -37,13 +37,25 @@ dependencies {
     testImplementation("net.serenity-bdd:serenity-cucumber:$serenityVersion")
     testImplementation("net.serenity-bdd:serenity-screenplay:$serenityVersion")
     testImplementation("net.serenity-bdd:serenity-screenplay-webdriver:$serenityVersion")
-    testImplementation("net.thucydides:thucydides-core:0.9.275")
-    testImplementation("net.thucydides:thucydides-junit:0.9.275")
+    testImplementation("io.cucumber:cucumber-java:7.18.1")
+    testImplementation("org.hamcrest:hamcrest:2.2")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.16")
 
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 }
 
 tasks.test {
+    useJUnit()
     systemProperty("cucumber.filter.tags", System.getProperty("cucumber.filter.tags", ""))
+    finalizedBy("aggregate")
+}
+
+tasks.register<Test>("quoteE2E") {
+    description = "Runs QuoteE2ERunner and generates updated Serenity reports"
+    group = "verification"
+    useJUnit()
+    include("**/QuoteE2ERunner.class")
+    systemProperty("cucumber.filter.tags", System.getProperty("cucumber.filter.tags", ""))
+    finalizedBy("aggregate")
 }
